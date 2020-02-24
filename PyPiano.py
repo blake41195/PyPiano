@@ -6,22 +6,34 @@ unpressedPicList = ['key_white_Left_unpressed.png', 'key_black_unpressed.png', '
                     'key_black_unpressed.png', 'key_white_Middle_unpressed.png',
                     'key_black_unpressed.png', 'key_white_Middle_unpressed.png', 'key_black_unpressed.png',
                     'key_white_Right_unpressed.png'
-                    ]
+                    ] * 4
 
 pressedPicList = ['key_white_Left_pressed.png', 'key_black_pressed.png', 'key_white_Middle_pressed.png',
                   'key_black_pressed.png', 'key_white_Right_pressed.png', 'key_white_Left_pressed.png',
                   'key_black_pressed.png', 'key_white_Middle_pressed.png',
                   'key_black_pressed.png', 'key_white_Middle_pressed.png', 'key_black_pressed.png',
                   'key_white_Right_pressed.png'
-                  ]
+                  ] * 4
 
 Notes = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b']
+oNotes = []
+for octave in range(2, 6):
+    for note in Notes:
+        oNotes.append(note + str(octave))
 
-notesPressedDict = dict(zip(Notes, pressedPicList))
-notesUnpressedDict = dict(zip(Notes, unpressedPicList))
+notesPressedDict = dict(zip(oNotes, pressedPicList))
+notesUnpressedDict = dict(zip(oNotes, unpressedPicList))
 
 KEYBOARDX = 5
 KEYBAORDY = 10
+
+# Various settings to test:
+# pygame.mixer.pre_init(44100, -16, 2, 4096)  # 4096 is ++cpu
+# pygame.mixer.pre_init(22050, -16, 2, 2048)
+# pygame.mixer.pre_init(22050, -16, 1, 2048)
+pygame.mixer.pre_init(44100, -16, 1, 2048)
+
+pygame.init()
 
 
 class Key(pygame.sprite.Sprite):
@@ -38,11 +50,12 @@ class Key(pygame.sprite.Sprite):
         self.rect.x = 0
         self.rect.y = KEYBAORDY
         self._layer = 0
-        self.color = 'white' if len(self.name) == 1 else 'black'
+        self.color = 'white' if len(self.name) == 2 else 'black'
 
         # soundFile is changed based on what octave is set within the game.  The sound file is initialized with
         # the lowest octave
-        self.soundFile = None
+        self.soundFile = pygame.mixer.Sound(
+            os.path.join('pythonpiano_sounds', f'piano-med-{self.name}.ogg'))
 
     def getImg(self):
         if self.pressed:
@@ -58,7 +71,7 @@ class Key(pygame.sprite.Sprite):
 
 
 class Game(object):
-    winWidth = 500
+    winWidth = 850
     winHeight = 150
     win = pygame.display.set_mode([winWidth, winHeight])
     pygame.display.set_caption('PiPiano')
@@ -70,10 +83,10 @@ class Game(object):
     def __init__(self):
         self.clock = pygame.time.Clock()
         self.running = True
-        self.octave = 2
         self.keys = pygame.sprite.LayeredUpdates()
-        for note in Notes:
+        for note in oNotes:
             self.keys.add(Key(note))
+
         for key in self.keys:
             if key.color == 'white':
                 key.rect.x = self.keyboardx_position
@@ -85,21 +98,7 @@ class Game(object):
             self.background.blit(key.getImg(), key.rect)
         self.win.blit(self.background, (0, 0))
 
-    def updateOctave(self):
-        for key in self.keys:
-            key.soundFile = pygame.mixer.Sound(
-                os.path.join('pythonpiano_sounds', f'piano-med-{key.name}{self.octave}.ogg'))
-
     def run(self):
-        # Various settings to test:
-        # pygame.mixer.pre_init(44100, -16, 2, 4096)  # 4096 is ++cpu
-        # pygame.mixer.pre_init(22050, -16, 2, 2048)
-        # pygame.mixer.pre_init(22050, -16, 1, 2048)
-        pygame.mixer.pre_init(44100, -16, 1, 2048)
-
-        pygame.init()
-        self.updateOctave()
-
         while self.running:
             self.clock.tick()
             self.handlerEvents()
@@ -114,14 +113,6 @@ class Game(object):
     def handlerEvents(self):
         mouseX, mouseY = pygame.mouse.get_pos()
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP]:
-            if self.octave < 5:
-                self.octave += 1
-                self.updateOctave()
-        elif keys[pygame.K_DOWN]:
-            if self.octave > 2:
-                self.octave -= 1
-                self.updateOctave()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
