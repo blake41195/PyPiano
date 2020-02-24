@@ -14,6 +14,13 @@ pressedPicList = ['key_white_Left_pressed.png', 'key_black_pressed.png', 'key_wh
                   'key_black_pressed.png', 'key_white_Middle_pressed.png', 'key_black_pressed.png',
                   'key_white_Right_pressed.png'
                   ] * 4
+keyboard = [pygame.K_z, pygame.K_s, pygame.K_x, pygame.K_d, pygame.K_c, pygame.K_v, pygame.K_g, pygame.K_b, pygame.K_h,
+            pygame.K_n, pygame.K_j, pygame.K_m, pygame.K_COMMA, pygame.K_l, pygame.K_PERIOD, pygame.K_COLON, pygame.K_SLASH,
+            pygame.K_q, pygame.K_2, pygame.K_w, pygame.K_3, pygame.K_e, pygame.K_4, pygame.K_r, pygame.K_t, pygame.K_6,
+            pygame.K_y, pygame.K_7, pygame.K_u, pygame.K_i, pygame.K_9, pygame.K_o, pygame.K_0, pygame.K_p, pygame.K_BREAK,
+            pygame.K_LEFTBRACKET, pygame.K_DELETE, pygame.K_HOME, pygame.K_END, pygame.K_PAGEUP, pygame.K_PAGEDOWN,
+            pygame.K_KP7, pygame.K_NUMLOCK, pygame.K_KP8, pygame.K_SLASH, pygame.K_KP9, pygame.K_ASTERISK, pygame.K_PLUS
+            ]
 
 Notes = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b']
 oNotes = []
@@ -23,6 +30,7 @@ for octave in range(2, 6):
 
 notesPressedDict = dict(zip(oNotes, pressedPicList))
 notesUnpressedDict = dict(zip(oNotes, unpressedPicList))
+keyMappingDict = dict(zip(oNotes, keyboard))
 
 KEYBOARDX = 5
 KEYBAORDY = 10
@@ -34,7 +42,6 @@ KEYBAORDY = 10
 pygame.mixer.pre_init(44100, -16, 1, 2048)
 
 pygame.init()
-
 
 class Key(pygame.sprite.Sprite):
     def __init__(self, name):
@@ -51,6 +58,11 @@ class Key(pygame.sprite.Sprite):
         self.rect.y = KEYBAORDY
         self._layer = 0
         self.color = 'white' if len(self.name) == 2 else 'black'
+        self.mapping = 0
+        try:
+            self.mapping = keyMappingDict[self.name]
+        except KeyError:
+            self.mapping = 0
 
         # soundFile is changed based on what octave is set within the game.  The sound file is initialized with
         # the lowest octave
@@ -68,6 +80,9 @@ class Key(pygame.sprite.Sprite):
             self.image = self.imgPressed
         else:
             self.image = self.imgUnpressed
+
+    def __str__(self):
+        return self.name
 
 
 class Game(object):
@@ -100,7 +115,7 @@ class Game(object):
 
     def run(self):
         while self.running:
-            self.clock.tick()
+            self.clock.tick(100)
             self.handlerEvents()
 
             # Render Sprites
@@ -112,8 +127,16 @@ class Game(object):
 
     def handlerEvents(self):
         mouseX, mouseY = pygame.mouse.get_pos()
-        keys = pygame.key.get_pressed()
         for event in pygame.event.get():
+            pressed = pygame.key.get_pressed()
+            for key in self.keys:
+                if pressed[keyMappingDict[key.name]]:
+                    key.pressed = True
+                    key.soundFile.play()
+            if event.type == pygame.KEYUP:
+                for key in self.keys:
+                    key.pressed = False
+                    key.soundFile.fadeout(600)
             if event.type == pygame.QUIT:
                 self.running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -125,6 +148,11 @@ class Game(object):
                 for key in self.keys:
                     key.pressed = False
                     key.soundFile.fadeout(600)
+
+
+
+
+
 
 
 if __name__ == '__main__':
